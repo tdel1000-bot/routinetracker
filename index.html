@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Floor</title></head>
+<body>
+<div id="app"></div>
+<style>
+  :root {
+    --bg: #141414;
+    --card: #1b1b1a;
+    --card-2: #212120;
+    --line: #302f2c;
+    --text: #e9e5da;
+    --text-dim: #8f8b81;
+    --text-faint: #5c584f;
+    --focus: #9c8a4e;
+    --focus-soft: #4a4530;
+    --workout: #4c7a5f;
+    --workout-soft: #29392f;
+    --shallow: #6a6fa0;
+    --shallow-soft: #33344a;
+    --hobby: #c17a4a;
+    --hobby-soft: #4a3324;
+    --miss: #a8503f;
+    --miss-soft: #3a2620;
+    --excused: #6b6558;
+  }
+  #app * { box-sizing: border-box; }
+  #app { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 28px 20px 40px; max-width: 640px; margin: 0 auto; min-height: 100vh; }
+  .mono { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace; }
+  .head { margin-bottom: 22px; }
+  .head h1 { font-size: 22px; letter-spacing: 0.02em; margin: 0 0 4px; font-weight: 650; }
+  .head p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.5; max-width: 46ch; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin: 0 0 14px; font-weight: 600; }
+  .row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 130px; }
+  .field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 5px; letter-spacing: 0.02em; }
+  input[type="date"], input[type="time"], select { width: 100%; background: var(--card-2); border: 1px solid var(--line); color: var(--text); padding: 8px 10px; border-radius: 6px; font-size: 13px; font-family: ui-monospace, monospace; }
+  .daytype-group { display: flex; gap: 6px; }
+  .daytype-btn { flex: 1; padding: 9px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--card-2); color: var(--text-dim); font-size: 12px; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .daytype-btn.active[data-type="protected"] { background: var(--focus-soft); border-color: var(--focus); color: var(--text); }
+  .daytype-btn.active[data-type="clownfish"] { background: var(--shallow-soft); border-color: var(--shallow); color: var(--text); }
+  .checklist { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .check-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--card-2); border: 1px solid var(--line); border-radius: 7px; cursor: pointer; transition: all 0.15s; }
+  .check-item.checked { border-color: var(--workout); background: var(--workout-soft); }
+  .check-item.excused { opacity: 0.55; cursor: default; }
+  .check-item .box { width: 17px; height: 17px; border-radius: 4px; border: 1.5px solid var(--text-faint); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .check-item.checked .box { border-color: var(--workout); background: var(--workout); color: var(--bg); }
+  .check-item .label { font-size: 13.5px; flex: 1; }
+  .check-item .sub { font-size: 11px; color: var(--text-dim); }
+  .check-item .note { font-size: 10.5px; color: var(--excused); font-style: italic; }
+  .save-btn { width: 100%; margin-top: 14px; padding: 11px; border-radius: 7px; border: 1px solid var(--focus); background: var(--focus-soft); color: var(--text); font-size: 13.5px; font-weight: 600; cursor: pointer; letter-spacing: 0.01em; }
+  .save-btn:active { opacity: 0.8; }
+  .save-btn:disabled { opacity: 0.4; cursor: default; }
+  .cap-note { font-size: 11px; color: var(--text-faint); margin-top: 10px; line-height: 1.5; }
+  .cap-note b { color: var(--text-dim); }
+  .strip { display: flex; gap: 5px; margin-top: 6px; }
+  .day-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .day-sq { width: 100%; aspect-ratio: 1; border-radius: 5px; border: 1.5px solid var(--line); background: var(--card-2); }
+  .day-sq.clean { background: var(--workout); border-color: var(--workout); }
+  .day-sq.miss { background: var(--miss-soft); border-color: var(--miss); }
+  .day-sq.empty { background: var(--card-2); border-color: var(--line); }
+  .day-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .day-dot.protected { background: var(--focus); }
+  .day-dot.clownfish { background: var(--shallow); }
+  .day-dot.social { background: var(--hobby); }
+  .day-dot.none { background: transparent; }
+  .day-lbl { font-size: 9px; color: var(--text-faint); }
+  .legend { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-dim); }
+  .legend-sw { width: 9px; height: 9px; border-radius: 2px; }
+  .gym-dot { width: 5px; height: 5px; border-radius: 50%; border: 1px solid var(--workout); }
+  .gym-dot.done { background: var(--workout); }
+  .gym-block { background: var(--card-2); border: 1px solid var(--line); border-radius: 7px; padding: 12px; margin-top: 12px; }
+  .gym-block-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .gym-block-title { font-size: 13px; }
+  .gym-block-count { font-size: 12px; font-family: ui-monospace, monospace; color: var(--text-dim); }
+  .gym-bar { display: flex; gap: 4px; margin-bottom: 8px; }
+  .gym-bar-seg { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+  .gym-bar-seg.filled { background: var(--workout); }
+  .gym-today-toggle { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
+  .gym-today-toggle.checked { border-color: var(--workout); background: var(--workout-soft); }
+  .gym-today-toggle .box { width: 17px; height: 17px; border-radius: 4px; border: 1.5px solid var(--text-faint); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .gym-today-toggle.checked .box { border-color: var(--workout); background: var(--workout); color: var(--bg); }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat { background: var(--card-2); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .stat .num { font-size: 26px; font-weight: 650; font-family: ui-monospace, monospace; }
+  .stat .lbl { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+  .stat.wide { grid-column: 1 / -1; }
+  .status-line { font-size: 13px; line-height: 1.5; color: var(--text); }
+  .status-line .accent { color: var(--workout); font-weight: 600; }
+  .status-line .accent-miss { color: var(--miss); font-weight: 600; }
+  .empty-state { text-align: center; padding: 30px 10px; color: var(--text-dim); font-size: 13px; }
+  .celebration { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--focus-soft); border: 1px solid var(--focus); border-radius: 8px; padding: 11px 14px; margin-bottom: 16px; font-size: 13px; }
+  .celebration .dismiss { cursor: pointer; color: var(--text-dim); font-size: 15px; line-height: 1; flex-shrink: 0; }
+  .day-sq.bounce::after { content: '★'; position: absolute; top: -6px; right: -4px; font-size: 9px; color: var(--focus); }
+  .day-sq { position: relative; }
+  .day-sq.empty-day { background: var(--card-2) !important; border: 1.5px dashed var(--line) !important; }
+  .gradient-legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 10.5px; color: var(--text-dim); }
+  .gradient-bar { width: 90px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, hsl(0,45%,32%), hsl(60,45%,38%), hsl(120,45%,38%)); }
+  .pb-grid { display: flex; flex-direction: column; gap: 8px; }
+  .pb-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-2); border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; }
+  .pb-row .pb-label { font-size: 12.5px; color: var(--text-dim); }
+  .pb-row .pb-value { font-size: 14px; font-family: ui-monospace, monospace; font-weight: 600; }
+</style>
+<script>
+(function() {
+  const root = document.getElementById('app');
+  const STORAGE = 'entries';
+  const SETTINGS = 'settings';
+  const PB_MILESTONES = 'pbMilestones';
+  const GYM_TARGET = 4;
+  const CHECKS = [{key:'work',label:'Focused work block'},{key:'hobby',label:'Hobby / social time'},{key:'reading',label:'30 min reading'}];
+  const DAYS = [{key:'protected',label:'Protected'},{key:'clownfish',label:'Clownfish'}];
+  const WEIGHTS = {sleep:25,work:30,hobby:15,reading:15,gym:15};
+  
+  let entries = {};
+  let settings = {weights:{...WEIGHTS},target:80,sleepTarget:'23:00'};
+  let loaded = false, showSettings = false, celebration = null;
+  let draft = {date:today(),dayType:'protected',bedTime:'',gym:false,work:false,hobby:false,reading:false};
+
+  function today() { return new Date().toISOString().slice(0,10); }
+  function weekKey(d) { const date=new Date(d+'T00:00:00'),day=date.getDay(),diff=(day===0?-6:1-day),mon=new Date(date);mon.setDate(date.getDate()+diff);return mon.toISOString().slice(0,10); }
+  function lastNDates(n,end) { const a=[],e=new Date((end||today())+'T00:00:00');for(let i=n-1;i>=0;i--){const d=new Date(e);d.setDate(d.getDate()-i);a.push(d.toISOString().slice(0,10));}return a; }
+  function isLate(t) { if(!t)return false;const[h,m]=t.split(':').map(Number),mins=h*60+m;return mins>=30&&mins<360; }
+  function lateThisWeek(d,ex) { const w=weekKey(d);let c=0;for(const[k,e]of Object.entries(entries)){if(k===ex)continue;if(weekKey(k)===w&&e.dayType==='protected'&&isLate(e.bedTime))c++;}return c; }
+  function toMins(t) { const[h,m]=t.split(':').map(Number),mins=h*60+m;return h<12?mins+1440:mins; }
+  function onTime(b,tg) { return b?toMins(b)<=toMins(tg):false; }
+
+  function expectations(e) {
+    const late=e.dayType==='protected'&&isLate(e.bedTime),prior=lateThisWeek(e.date,e.date),ok=prior<2,exc=late&&ok;
+    const r={sleep:{expected:true,excused:false,note:''},work:{expected:true,excused:false,note:''},hobby:{expected:true,excused:false,note:''},reading:{expected:true,excused:false,note:''}};
+    if(e.dayType==='clownfish'){r.sleep={expected:false,excused:true,note:'excused — shift day'};r.reading={expected:false,excused:true,note:'excused — shift day'};}
+    else if(exc) r.sleep={expected:false,excused:true,note:'excused — ran past 00:30 (2/week)'};
+    else if(late&&!ok) r.sleep={expected:true,excused:false,note:'excuse cap used this week'};
+    return r;
+  }
+
+  function outcome(e) { const ex=expectations(e);let met=true;if(ex.sleep.expected&&!onTime(e.bedTime,settings.sleepTarget))met=false;for(const k of['work','hobby','reading'])if(ex[k].expected&&!e[k])met=false;return met?'clean':'miss'; }
+  function scoreColor(s) { const c=Math.max(0,Math.min(100,s)),h=(c/100)*120,l=28+(c/100)*14;return `hsl(${h.toFixed(0)},48%,${l.toFixed(0)}%)`; }
+  function dayIndex(e) { const ex=expectations(e),w=settings.weights;let s=0;if(!ex.sleep.expected)s+=w.sleep;else if(onTime(e.bedTime,settings.sleepTarget))s+=w.sleep;for(const k of['work','hobby','reading']){if(!ex[k].expected)s+=w[k];else if(e[k])s+=w[k];}if(e.gym)s+=w.gym;return Math.min(100,Math.round(s)); }
+  function gymWeek(wk,ex,ov) { let c=0;for(const[d,e]of Object.entries(entries)){if(d===ex)continue;if(weekKey(d)===wk&&e.gym)c++;}if(ov&&weekKey(ov.date)===wk&&ov.gym)c++;return c; }
+
+  function computeStats() {
+    const dates=Object.keys(entries).sort();
+    if(dates.length===0)return null;
+    let clean=0;const out=[];
+    for(const d of dates){const o=outcome(entries[d]);out.push({date:d,outcome:o,isBounce:false});if(o==='clean')clean++;}
+    const bounces=[];
+    for(let i=0;i<out.length;i++){if(out[i].outcome==='miss'){for(let j=i+1;j<out.length;j++){if(out[j].outcome==='clean'){const d=(new Date(out[j].date)-new Date(out[i].date))/86400000;bounces.push(Math.round(d));if(j===i+1)out[j].isBounce=true;break;}}}}
+    const avgBounce=bounces.length?(bounces.reduce((a,b)=>a+b,0)/bounces.length).toFixed(1):null;
+    const last=out[out.length-1];
+    let status;
+    if(last.outcome==='clean'){let str=0;for(let i=out.length-1;i>=0;i--)if(out[i].outcome==='clean')str++;else break;status=`<span class="accent">${str} clean day${str===1?'':'s'}</span> in a row right now.`;}
+    else status=`Yesterday's a <span class="accent-miss">miss</span> — today is the bounce-back. That's the only thing that matters right now.`;
+    const idx7=lastNDates(7).filter(d=>entries[d]);const rolling=idx7.length?Math.round(idx7.reduce((s,d)=>s+dayIndex(entries[d]),0)/idx7.length):null;
+    const byDate={};out.forEach(o=>{byDate[o.date]=o;});const recent=lastNDates(14).map(d=>byDate[d]||{date:d,outcome:'empty',isBounce:false});
+    return {totalDays:dates.length,cleanRate:Math.round((clean/dates.length)*100),avgBounce,bounceCount:bounces.length,statusHtml:status,recent,rollingIndex:rolling,rollingDays:idx7.length};
+  }
+
+  function computeRecords(ent) {
+    const dates=Object.keys(ent).sort();if(dates.length===0)return null;
+    const out=dates.map(d=>({date:d,outcome:outcome(ent[d])}));
+    let longest=0,cur=0;for(const o of out){if(o.outcome==='clean'){cur++;longest=Math.max(longest,cur);}else cur=0;}
+    const totalClean=out.filter(o=>o.outcome==='clean').length;
+    let bestRoll=0,longAbove=0,curAbove=0;
+    for(let i=0;i<dates.length;i++){const win=dates.slice(Math.max(0,i-6),i+1);const avg=win.reduce((s,d)=>s+dayIndex(ent[d]),0)/win.length;bestRoll=Math.max(bestRoll,avg);if(avg>=settings.target){curAbove++;longAbove=Math.max(longAbove,curAbove);}else curAbove=0;}
+    bestRoll=Math.round(bestRoll);
+    let sameDays=0;for(let i=0;i<out.length;i++){if(out[i].outcome==='miss'){for(let j=i+1;j<out.length;j++){if(out[j].outcome==='clean'){const d=Math.round((new Date(out[j].date)-new Date(out[i].date))/86400000);if(d===1)sameDays++;break;}}}}
+    const wkGym={};for(const d of dates)wkGym[weekKey(d)]=(wkGym[weekKey(d)]||0)+(ent[d].gym?1:0);
+    const first=weekKey(dates[0]),last=weekKey(dates[dates.length-1]);
+    let consGym=0,curGym=0;const cur_=new Date(first+'T00:00:00'),last_=new Date(last+'T00:00:00');
+    while(cur_<=last_){const w=cur_.toISOString().slice(0,10);const cnt=wkGym[w]||0;if(cnt>=GYM_TARGET){curGym++;consGym=Math.max(consGym,curGym);}else curGym=0;cur_.setDate(cur_.getDate()+7);}
+    return {longestStreak:longest,bestRolling:bestRoll,longestAboveTarget:longAbove,sameDayCount:sameDays,consecutiveGymWeeks:consGym,totalCleanDays:totalClean};
+  }
+
+  function loadEntries() {
+    try{const stored=localStorage.getItem(STORAGE);entries=stored?JSON.parse(stored):{};} catch(e){entries={};}
+    try{const storedSettings=localStorage.getItem(SETTINGS);if(storedSettings){const s=JSON.parse(storedSettings);settings={weights:{...WEIGHTS,...(s.weights||{})},target:s.target??80,sleepTarget:s.sleepTarget??'23:00'};}} catch(e){}
+    loaded=true;const ex=entries[draft.date];if(ex)draft={...ex};render();
+  }
+
+  function saveDraft() {
+    const prevRec=computeRecords(entries);entries[draft.date]={...draft};const newRec=computeRecords(entries);
+    celebration=prevRec&&newRec?(newRec.longestStreak>prevRec.longestStreak?`New PB — longest clean run: ${newRec.longestStreak} day${newRec.longestStreak===1?'':'s'}.`:newRec.bestRolling>prevRec.bestRolling?`New PB — 7-day index: ${newRec.bestRolling}.`:newRec.longestAboveTarget>prevRec.longestAboveTarget?`New PB — ${newRec.longestAboveTarget} day${newRec.longestAboveTarget===1?'':'s'} at/above target.`:newRec.consecutiveGymWeeks>prevRec.consecutiveGymWeeks?`New PB — ${newRec.consecutiveGymWeeks} week${newRec.consecutiveGymWeeks===1?'':'s'} in a row hitting gym.`:newRec.sameDayCount>(prevRec.sameDayCount||0)?`Next-day bounce-back. That's the skill — recovering fast beats never slipping.`:null):null;
+    if(celebration)savePBMilestone(celebration);
+    try{localStorage.setItem(STORAGE,JSON.stringify(entries));}catch(e){console.error('save failed',e);}render();
+  }
+  
+  function savePBMilestone(text){
+    try{const ms=JSON.parse(localStorage.getItem(PB_MILESTONES))||[];ms.push({text,date:today()});while(ms.length>3)ms.shift();localStorage.setItem(PB_MILESTONES,JSON.stringify(ms));}catch(e){console.error('PB save failed',e);}
+  }
+
+  function saveSettings() { try{localStorage.setItem(SETTINGS,JSON.stringify(settings));}catch(e){console.error('settings save failed',e);}render(); }
+  function onDateChange(v) { draft.date=v;const ex=entries[v];draft=ex?{...ex}:{date:v,dayType:'protected',bedTime:'',gym:false,work:false,hobby:false,reading:false};render(); }
+  function fmtDay(d) { return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short'}).slice(0,2); }
+
+  function render() {
+    if(!loaded){root.innerHTML=`<div class="empty-state">loading…</div>`;return;}
+    const exp=expectations(draft);const stats=computeStats();const records=computeRecords(entries);
+    const sleepOk=onTime(draft.bedTime,settings.sleepTarget);const sleepExp=exp.sleep;const sleepMet=!sleepExp.expected||sleepOk;
+    const sleepNote=sleepExp.note||(draft.bedTime?(sleepOk?`asleep by ${settings.sleepTarget}`:`later than ${settings.sleepTarget} target`):'enter bed time above');
+    const sleepHtml=`<div class="check-item ${sleepMet?'checked':''} ${!sleepExp.expected?'excused':''}"><div class="box">${sleepMet?'✓':''}</div><div class="label">Asleep by ${settings.sleepTarget}</div><div class="note">${sleepNote}</div></div>`;
+    const checkHtml=CHECKS.map(it=>{const e=exp[it.key];const chk=draft[it.key];const dis=!e.expected;return `<div class="check-item ${chk?'checked':''} ${dis?'excused':''}" data-key="${it.key}" ${dis?'':'data-clickable="1"'}><div class="box">${chk?'✓':''}</div><div class="label">${it.label}</div>${e.note?`<div class="note">${e.note}</div>`:''}</div>`;}).join('');
+    const dayHtml=DAYS.map(t=>`<div class="daytype-btn ${draft.dayType===t.key?'active':''}" data-type="${t.key}">${t.label}</div>`).join('');
+    let histHtml=`<div class="empty-state">Log today to start building your strip.</div>`;
+    if(stats&&stats.recent.length){const cols=stats.recent.map(o=>{const e=entries[o.date];if(!e)return `<div class="day-col"><div class="day-sq empty-day"></div><div class="day-dots"><div class="day-dot none"></div><div class="gym-dot"></div></div><div class="day-lbl">${fmtDay(o.date)}</div></div>`;const idx=dayIndex(e);const bg=scoreColor(idx);return `<div class="day-col"><div class="day-sq ${o.isBounce?'bounce':''}" style="background:${bg};border-color:${bg};"></div><div class="day-dots"><div class="day-dot ${e.dayType}"></div><div class="gym-dot ${e.gym?'done':''}"></div></div><div class="day-lbl">${fmtDay(o.date)}</div></div>`;}).join('');histHtml=`<div class="strip">${cols}</div><div class="gradient-legend"><div class="gradient-bar"></div><span>low index → high index (color = day's score)</span></div><div class="legend"><div class="legend-item"><div class="legend-sw" style="background:var(--focus)"></div>protected</div><div class="legend-item"><div class="legend-sw" style="background:var(--shallow)"></div>clownfish</div><div class="legend-item"><div class="gym-dot done" style="width:7px;height:7px;"></div>gym</div><div class="legend-item">★ bounce-back day</div><div class="legend-item"><div class="legend-sw" style="background:var(--card-2);border:1px dashed var(--line);"></div>not logged</div></div>`;}
+    let statsHtml=`<div class="empty-state">Stats show up once you've logged a few days.</div>`;
+    if(stats){const ok=stats.rollingIndex!==null&&stats.rollingIndex>=settings.target;const col=stats.rollingIndex===null?'var(--text-dim)':(ok?'var(--workout)':'var(--miss)');statsHtml=`<div class="stat-grid"><div class="stat"><div class="num" style="color:${col}">${stats.rollingIndex??'—'}</div><div class="lbl">7-day index (target ${settings.target})</div></div><div class="stat"><div class="num">${stats.avgBounce??'—'}</div><div class="lbl">avg. days to bounce back</div></div><div class="stat"><div class="num">${stats.cleanRate}%</div><div class="lbl">clean days (${stats.totalDays} logged)</div></div><div class="stat"><div class="num">${gymWeek(weekKey(today()),null,null)}/${GYM_TARGET}</div><div class="lbl">gym this week</div></div><div class="stat wide"><div class="status-line">${stats.statusHtml}</div></div></div>`;}
+    const wkGym=gymWeek(weekKey(draft.date),draft.date,draft);const segs=Array.from({length:GYM_TARGET},(_,i)=>`<div class="gym-bar-seg ${i<wkGym?'filled':''}"></div>`).join('');
+    const setHtml=showSettings?`<div class="card"><h2>Weights &amp; targets</h2><div class="row"><div class="field"><label>Sleep target time</label><input type="time" id="w-sleeptime" value="${settings.sleepTarget}" /></div><div class="field"><label>Target index</label><input type="number" id="w-target" value="${settings.target}" min="0" max="100" /></div></div><div class="row"><div class="field"><label>Sleep (weight)</label><input type="number" id="w-sleep" value="${settings.weights.sleep}" min="0" max="100" /></div><div class="field"><label>Work</label><input type="number" id="w-work" value="${settings.weights.work}" min="0" max="100" /></div></div><div class="row"><div class="field"><label>Hobby/social</label><input type="number" id="w-hobby" value="${settings.weights.hobby}" min="0" max="100" /></div><div class="field"><label>Gym (bonus)</label><input type="number" id="w-gym" value="${settings.weights.gym}" min="0" max="100" /></div></div><div class="cap-note">Weights should add to 100 — currently ${settings.weights.sleep+settings.weights.work+settings.weights.hobby+settings.weights.gym}. Gym is bonus on top.</div><button class="save-btn" id="save-settings-btn">Save weights</button></div>`:'';
+    let pbMilestones=[];try{pbMilestones=JSON.parse(localStorage.getItem(PB_MILESTONES))||[];}catch(e){}
+    const pbHtml=pbMilestones.length>0?`<div class="card"><h2>Top 3 Personal Bests</h2><div class="pb-grid">${pbMilestones.map(pb=>`<div class="pb-row"><div class="pb-label">${pb.date}</div><div class="pb-value" style="font-size:12px;">${pb.text}</div></div>`).join('')}</div></div>`:`<div class="card"><h2>Top 3 Personal Bests</h2><div class="empty-state">Achieve a new PB and it'll show up here.</div></div>`;
+    const celHtml=celebration?`<div class="celebration"><div>${celebration}</div><div class="dismiss" id="dismiss-celebration">✕</div></div>`:'';
+    root.innerHTML=`<div class="head"><h1>Floor</h1><p>The 7-day index is a rolling average, not lifetime — a bad patch shows up but doesn't haunt the score. Bounce-back is still the number underneath it: how fast you come back after a miss.</p></div>${celHtml}<div class="card"><h2>Log a day</h2><div class="row"><div class="field"><label>Date</label><input type="date" id="date-input" value="${draft.date}" /></div><div class="field"><label>Bed time last night</label><input type="time" id="bedtime-input" value="${draft.bedTime}" /></div></div><div class="field" style="margin-bottom:14px;"><label>Day type</label><div class="daytype-group">${dayHtml}</div></div><div class="checklist">${sleepHtml}${checkHtml}</div><div class="gym-block"><div class="gym-block-top"><div class="gym-block-title">Gym — weekly minimum</div><div class="gym-block-count">${wkGym}/${GYM_TARGET} this week</div></div><div class="gym-bar">${segs}</div><div class="gym-today-toggle ${draft.gym?'checked':''}" id="gym-toggle"><div class="box">${draft.gym?'✓':''}</div><div class="label">Went today</div></div></div><button class="save-btn" id="save-btn">Save day</button><div class="cap-note">Late night = asleep at/after 00:30. <b>2 excuses/week</b> on protected days. Clownfish always excuses sleep. Gym is separate ${GYM_TARGET}-per-week minimum.</div></div>${setHtml}<div class="card"><h2>Last 14 days</h2>${histHtml}</div><div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><h2 style="margin:0;">Where you actually stand</h2><div class="daytype-btn" id="settings-toggle" style="flex:none;padding:6px 10px;font-size:11px;">${showSettings?'Hide weights':'Edit weights'}</div></div>${statsHtml}</div>${pbHtml}`;
+    document.getElementById('date-input').addEventListener('change',(e)=>onDateChange(e.target.value));
+    document.getElementById('bedtime-input').addEventListener('change',(e)=>{draft.bedTime=e.target.value;render();});
+    document.getElementById('save-btn').addEventListener('click',saveDraft);
+    const dis=document.getElementById('dismiss-celebration');if(dis)dis.addEventListener('click',()=>{celebration=null;render();});
+    root.querySelectorAll('.daytype-btn').forEach(btn=>{if(btn.id==='settings-toggle')return;btn.addEventListener('click',()=>{draft.dayType=btn.dataset.type;render();});});
+    root.querySelectorAll('.check-item[data-clickable="1"]').forEach(el=>{el.addEventListener('click',()=>{const k=el.dataset.key;draft[k]=!draft[k];render();});});
+    const gymT=document.getElementById('gym-toggle');if(gymT)gymT.addEventListener('click',()=>{draft.gym=!draft.gym;render();});
+    const setT=document.getElementById('settings-toggle');if(setT)setT.addEventListener('click',()=>{showSettings=!showSettings;render();});
+    const saveSB=document.getElementById('save-settings-btn');if(saveSB)saveSB.addEventListener('click',()=>{settings.weights.sleep=Number(document.getElementById('w-sleep').value)||0;settings.weights.work=Number(document.getElementById('w-work').value)||0;settings.weights.hobby=Number(document.getElementById('w-hobby').value)||0;settings.weights.gym=Number(document.getElementById('w-gym').value)||0;settings.target=Number(document.getElementById('w-target').value)||80;settings.sleepTarget=document.getElementById('w-sleeptime').value||'23:00';saveSettings();});
+  }
+  loadEntries();
+})();
+</script>
+</body>
+</html>
